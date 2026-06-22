@@ -17,7 +17,7 @@ struct OnboardingView: View {
     @State private var goal: Goal = .maintain
     @State private var didSeed = false
 
-    private var body: BodyProfile {
+    private var profile: BodyProfile {
         BodyProfile(sex: sex, birthDate: birthDate, heightCm: heightCm,
                     weightKg: weightKg, activity: activity, goal: goal)
     }
@@ -77,7 +77,7 @@ struct OnboardingView: View {
                     }.pickerStyle(.segmented)
                 }
 
-                field("Date of birth · Age \(body.age)") {
+                field("Date of birth · Age \(profile.age)") {
                     DatePicker("", selection: $birthDate, in: ...Date(), displayedComponents: .date)
                         .datePickerStyle(.compact).labelsHidden().colorScheme(.dark)
                 }
@@ -126,7 +126,7 @@ struct OnboardingView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 stepTitle("System Calibration", subtitle: "Your daily targets, derived from your data.")
-                BodyStatsPanel(body: body)
+                BodyStatsPanel(profile: profile)
                 Text("You can change any of this later in Settings.")
                     .font(.caption).foregroundStyle(SystemTheme.textSecondary)
             }
@@ -145,7 +145,7 @@ struct OnboardingView: View {
             Spacer()
             Button {
                 if step < 3 { withAnimation { step += 1 } }
-                else { Task { await vm.completeOnboarding(name: name, body: body) } }
+                else { Task { await vm.completeOnboarding(name: name, body: profile) } }
             } label: {
                 Text(step < 3 ? "Continue" : "AWAKEN")
                     .font(.system(.headline, design: .rounded).weight(.bold)).tracking(1)
@@ -164,9 +164,9 @@ struct OnboardingView: View {
             Text("BMI").font(.system(.caption, design: .monospaced).weight(.bold))
                 .foregroundStyle(SystemTheme.textSecondary)
             Spacer()
-            Text(String(format: "%.1f", body.bmi)).font(.system(.headline, design: .rounded).weight(.bold))
+            Text(String(format: "%.1f", profile.bmi)).font(.system(.headline, design: .rounded).weight(.bold))
                 .foregroundStyle(SystemTheme.accent)
-            Text(body.bmiCategory.rawValue).font(.caption).foregroundStyle(SystemTheme.textSecondary)
+            Text(profile.bmiCategory.rawValue).font(.caption).foregroundStyle(SystemTheme.textSecondary)
         }
         .padding(12)
         .background(RoundedRectangle(cornerRadius: 10).fill(SystemTheme.panel))

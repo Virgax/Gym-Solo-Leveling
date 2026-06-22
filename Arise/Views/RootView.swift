@@ -57,7 +57,7 @@ private struct StatusTab: View {
                 streakChip
                 if vm.usingMockData { mockBanner }
                 StatusWindowView(vm: vm)
-                if let body = vm.profile.bodyProfile { BodyStatsPanel(body: body) }
+                if let body = vm.profile.bodyProfile { BodyStatsPanel(profile: body) }
                 Color.clear.frame(height: 20)
             }
             .padding(16)

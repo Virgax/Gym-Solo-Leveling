@@ -4,19 +4,19 @@ import SwiftUI
 /// BMI = kg/m² · BMR = Mifflin–St Jeor · TDEE = BMR × activity · targets shift
 /// with the chosen goal.
 struct BodyStatsPanel: View {
-    let body: BodyProfile
+    let profile: BodyProfile
 
     var body: some View {
         SystemPanel(title: "Vitals & Targets") {
             VStack(spacing: 14) {
                 HStack(spacing: 10) {
-                    metric("BMI", String(format: "%.1f", body.bmi), body.bmiCategory.rawValue, SystemTheme.accent)
-                    metric("BMR", "\(Int(body.bmr))", "kcal rest", SystemTheme.gold)
-                    metric("TDEE", "\(Int(body.tdee))", "kcal/day", SystemTheme.glow)
+                    metric("BMI", String(format: "%.1f", profile.bmi), profile.bmiCategory.rawValue, SystemTheme.accent)
+                    metric("BMR", "\(Int(profile.bmr))", "kcal rest", SystemTheme.gold)
+                    metric("TDEE", "\(Int(profile.tdee))", "kcal/day", SystemTheme.glow)
                 }
                 Divider().overlay(SystemTheme.panelStroke.opacity(0.3))
-                let t = body.targets
-                target("flame.fill", "Calories", "\(t.calories) kcal", body.goal.label, SystemTheme.danger)
+                let t = profile.targets
+                target("flame.fill", "Calories", "\(t.calories) kcal", profile.goal.label, SystemTheme.danger)
                 target("fork.knife", "Protein", "\(t.proteinG) g", "muscle fuel", StatKind.strength.color)
                 target("drop.fill", "Water", "\(t.waterMl) mL", "≈\(t.waterMl / 250) glasses", Color(hex: 0x35C2FF))
                 target("cup.and.saucer.fill", "Caffeine limit", "\(t.caffeineLimitMg) mg", "stay under", SystemTheme.textSecondary)
