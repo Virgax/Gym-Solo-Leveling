@@ -1,5 +1,8 @@
 import Foundation
 import SwiftUI
+#if canImport(WidgetKit)
+import WidgetKit
+#endif
 
 /// The app's single source of truth: onboarding, health snapshot, daily intake,
 /// Gates, and progression. Sub-views observe this via @EnvironmentObject.
@@ -230,6 +233,21 @@ final class SystemViewModel: ObservableObject {
             pendingLevelUp = newLevel
         }
         store.save(profile)
+        publishShared()
+    }
+
+    /// Mirror a compact summary to the App Group and refresh widgets.
+    private func publishShared() {
+        let p = LevelingEngine.progress(forTotalXP: profile.totalXP)
+        let shared = SharedSnapshot(
+            name: profile.name, level: profile.level, rankRaw: profile.rank.rawValue,
+            xpInto: p.into, xpSpan: p.span, streak: streak,
+            questsDone: quests.filter { $0.isComplete }.count, questsTotal: quests.count,
+            updated: .now)
+        SharedStore.shared.save(shared)
+        #if canImport(WidgetKit)
+        WidgetCenter.shared.reloadAllTimelines()
+        #endif
     }
 
     // MARK: Misc

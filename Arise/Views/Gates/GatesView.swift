@@ -118,6 +118,10 @@ final class GateSession: ObservableObject {
     @Published var completed: [UUID: Int] = [:]
     @Published var restRemaining = 0
 
+    #if canImport(ActivityKit)
+    private let live = GateLiveActivityController()
+    #endif
+
     init(routine: Routine) { self.routine = routine }
 
     var totalSets: Int { routine.totalSets }
@@ -127,16 +131,52 @@ final class GateSession: ObservableObject {
 
     func setCount(for re: RoutineExercise) -> Int { completed[re.id] ?? 0 }
 
+    /// Name of the exercise currently being worked (first not-yet-finished).
+    var currentExerciseName: String {
+        (routine.exercises.first { setCount(for: $0) < $0.sets } ?? routine.exercises.last)?
+            .exercise.name ?? routine.name
+    }
+
     /// Tap set index `i` (0-based) → mark that many sets done; start rest timer.
     func tap(_ re: RoutineExercise, index: Int) {
         let current = setCount(for: re)
         let newValue = (index + 1 == current) ? index : index + 1   // tap last to undo
         completed[re.id] = max(0, min(re.sets, newValue))
         if newValue > current { restRemaining = re.restSeconds }
+        syncLive()
     }
 
-    func tick() { if restRemaining > 0 { restRemaining -= 1 } }
-    func skipRest() { restRemaining = 0 }
+    func tick() {
+        if restRemaining > 0 {
+            restRemaining -= 1
+            if restRemaining == 0 { syncLive() }
+        }
+    }
+    func skipRest() { restRemaining = 0; syncLive() }
+
+    // MARK: Live Activity
+
+    func startLive() {
+        #if canImport(ActivityKit)
+        live.start(routine: routine, state: state())
+        #endif
+    }
+    func endLive() {
+        #if canImport(ActivityKit)
+        live.end()
+        #endif
+    }
+    private func syncLive() {
+        #if canImport(ActivityKit)
+        live.update(state())
+        #endif
+    }
+    #if canImport(ActivityKit)
+    private func state() -> GateActivityAttributes.ContentState {
+        .init(exerciseName: currentExerciseName, setsDone: doneSets,
+              totalSets: totalSets, resting: restRemaining > 0, restRemaining: restRemaining)
+    }
+    #endif
 }
 
 struct GateSessionView: View {
@@ -175,6 +215,8 @@ struct GateSessionView: View {
         .navigationTitle(routine.name)
         .navigationBarTitleDisplayMode(.inline)
         .onReceive(timer) { _ in session.tick() }
+        .onAppear { session.startLive() }
+        .onDisappear { session.endLive() }
         .overlay { if cleared { GateClearedOverlay(routine: routine) { dismiss() } } }
     }
 
@@ -212,6 +254,7 @@ struct GateSessionView: View {
     private var clearButton: some View {
         Button {
             vm.completeGate(routine)
+            session.endLive()
             withAnimation(.spring) { cleared = true }
         } label: {
             Text(session.isCleared ? "CLEAR GATE  ·  +\(routine.xpReward) XP" : "Complete all sets to clear")

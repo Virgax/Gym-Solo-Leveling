@@ -38,12 +38,34 @@ Health, and Arise reads from there.
 
 1. Open `Arise.xcodeproj` in **Xcode 16+**.
 2. Select the **Arise** scheme and a device/Simulator (iOS 17+).
-3. Set your **Team** under *Signing & Capabilities* (HealthKit needs a real
-   provisioning profile to run on a device).
+3. Set your **Team** on **both** targets (Arise + AriseWidgetExtension) under
+   *Signing & Capabilities*. HealthKit + Live Activities need a real
+   provisioning profile to run on a device.
 4. Build & run. Tap **AWAKEN** and grant Health access.
 
 > Real ring/scale/watch data only appears on a physical device that has those
 > sources synced into Apple Health. The Simulator shows sample data.
+
+### Widgets & Live Activities
+
+The project ships a **widget extension** (`AriseWidget/`):
+- **Home / Lock Screen widget** — rank, level, XP bar, streak and quest count
+  (small, medium, and Lock Screen accessory sizes).
+- **Live Activity** — an in-progress Gate on the Lock Screen + Dynamic Island
+  (current exercise, sets done, rest countdown).
+
+Both read a shared summary through an **App Group**. To enable it:
+1. On **both** targets, add the **App Groups** capability and create
+   `group.com.virgax.arise` (already wired in the entitlements files — just
+   toggle it on for your team so it gets provisioned).
+2. The main app's **Live Activities** capability is enabled via
+   `NSSupportsLiveActivities = YES` (already set).
+
+> ⚠️ The widget target was authored by hand (this repo is built outside Xcode).
+> If Xcode complains about the second target, you can re-create it via
+> *File ▸ New ▸ Target ▸ Widget Extension* and point it at the existing
+> `AriseWidget/` + `Shared/` files — all the source is ready. The main app
+> builds and runs independently of the widget.
 
 ## Architecture
 
