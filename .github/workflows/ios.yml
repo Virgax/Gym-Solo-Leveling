@@ -1,0 +1,56 @@
+name: iOS Build
+
+on:
+  push:
+    branches: [ "claude/gym-solo-leveling-hzojie", "main" ]
+    paths:
+      - "Arise/**"
+      - "AriseWidget/**"
+      - "Shared/**"
+      - "Arise.xcodeproj/**"
+      - ".github/workflows/ios.yml"
+  pull_request:
+    paths:
+      - "Arise/**"
+      - "AriseWidget/**"
+      - "Shared/**"
+      - "Arise.xcodeproj/**"
+      - ".github/workflows/ios.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -switch /Applications/Xcode_15.4.app
+
+      - name: Show toolchain & schemes
+        run: |
+          xcodebuild -version
+          xcodebuild -list -project Arise.xcodeproj
+
+      - name: Build app (iOS Simulator, unsigned)
+        run: |
+          xcodebuild build \
+            -project Arise.xcodeproj \
+            -scheme Arise \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
+
+      - name: Package .app artifact
+        run: |
+          cd build/Build/Products/Debug-iphonesimulator
+          zip -r "$GITHUB_WORKSPACE/Arise-ios-simulator.app.zip" Arise.app
+
+      - name: Upload simulator app
+        uses: actions/upload-artifact@v4
+        with:
+          name: arise-ios-sim-app
+          path: Arise-ios-simulator.app.zip
+          if-no-files-found: error
