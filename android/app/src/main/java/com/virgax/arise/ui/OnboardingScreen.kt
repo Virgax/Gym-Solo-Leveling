@@ -1,6 +1,8 @@
 package com.virgax.arise.ui
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -92,9 +94,10 @@ private fun Label(text: String) {
     Spacer(Modifier.height(6.dp))
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ChipRow(options: List<String>, selectedIndex: Int, onSelect: (Int) -> Unit) {
-    androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         options.forEachIndexed { i, label ->
             FilterChip(
                 selected = i == selectedIndex,
