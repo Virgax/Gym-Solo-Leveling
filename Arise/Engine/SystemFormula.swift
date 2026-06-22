@@ -18,6 +18,15 @@ enum SystemFormula {
         return Int(xp.rounded())
     }
 
+    /// XP from today's fuel & hydration. Idempotent (depends only on the log).
+    static func nutritionXP(log: DailyLog, targets: NutritionTargets) -> Int {
+        var xp = 0.0
+        xp += min(1, Double(log.waterMl) / Double(max(1, targets.waterMl))) * 20
+        xp += min(1, log.totalProteinG / Double(max(1, targets.proteinG))) * 25
+        xp += Double(log.mealsLogged) * 4
+        return Int(xp.rounded())
+    }
+
     /// 0…40 reward for a healthy night. nil/0 → 0 (untracked, no penalty here).
     static func sleepScore(hours: Double?) -> Double {
         guard let h = hours, h > 0 else { return 0 }

@@ -6,6 +6,11 @@ struct HunterProfile: Codable {
     var name: String = "Hunter"
     var createdAt: Date = .now
 
+    /// Set once the first-launch setup flow finishes.
+    var onboardingComplete: Bool = false
+    /// Body metrics + goal captured at setup; drives nutrition targets.
+    var bodyProfile: BodyProfile?
+
     /// Day (yyyy-MM-dd) → XP from continuous metrics. Recomputed/replaced on
     /// each sync so re-reading a day never double-counts.
     var metricLedger: [String: Int] = [:]

@@ -2,12 +2,13 @@ import SwiftUI
 
 /// The "DAILY QUEST" window — the System's to-do list with progress.
 struct QuestWindowView: View {
+    var title: String = "Daily Quest — Info"
     let quests: [Quest]
 
     private var allDone: Bool { !quests.isEmpty && quests.allSatisfy { $0.isComplete } }
 
     var body: some View {
-        SystemPanel(title: "Daily Quest — Info") {
+        SystemPanel(title: title) {
             VStack(alignment: .leading, spacing: 14) {
                 Text(allDone ? "ALL QUESTS CLEARED. Well done, Hunter."
                              : "Complete the daily training to grow stronger.")

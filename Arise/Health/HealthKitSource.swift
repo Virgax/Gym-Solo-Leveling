@@ -19,10 +19,13 @@ final class HealthKitSource: HealthSource {
         let quantities: [HKQuantityTypeIdentifier] = [
             .stepCount, .activeEnergyBurned, .appleExerciseTime, .distanceWalkingRunning,
             .restingHeartRate, .heartRateVariabilitySDNN, .vo2Max, .oxygenSaturation,
-            .bodyMass, .bodyFatPercentage, .leanBodyMass,
+            .bodyMass, .bodyFatPercentage, .leanBodyMass, .height,
+            .dietaryWater, .dietaryCaffeine, .dietaryEnergyConsumed,
         ]
         quantities.compactMap { HKQuantityType.quantityType(forIdentifier: $0) }.forEach { types.insert($0) }
         if let sleep = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) { types.insert(sleep) }
+        if let sex = HKObjectType.characteristicType(forIdentifier: .biologicalSex) { types.insert(sex) }
+        if let dob = HKObjectType.characteristicType(forIdentifier: .dateOfBirth) { types.insert(dob) }
         return types
     }
 
@@ -77,6 +80,29 @@ final class HealthKitSource: HealthSource {
         s.avgSleepHours = await averageSleepHours(from: start30, to: now)
 
         return s
+    }
+
+    // MARK: Onboarding prefill
+
+    func bodyPrefill() async -> BodyPrefill {
+        guard isAvailable else { return BodyPrefill() }
+        var prefill = BodyPrefill()
+
+        // Characteristics are read synchronously and may throw if undisclosed.
+        if let sexObj = try? store.biologicalSex() {
+            switch sexObj.biologicalSex {
+            case .male: prefill.sex = .male
+            case .female: prefill.sex = .female
+            case .other: prefill.sex = .other
+            default: break
+            }
+        }
+        if let dob = try? store.dateOfBirthComponents(), let date = dob.date {
+            prefill.birthDate = date
+        }
+        prefill.heightCm = await latest(.height, unit: .meterUnit(with: .centi))
+        prefill.weightKg = await latest(.bodyMass, unit: .gramUnit(with: .kilo))
+        return prefill
     }
 
     // MARK: Workout activity groups
