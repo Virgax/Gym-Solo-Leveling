@@ -17,6 +17,13 @@ final class SystemViewModel: ObservableObject {
     @Published var conditionModifier: Double = 1.0
     @Published var usingMockData = false
 
+    /// Consecutive cleared days, and whether the Penalty Zone is active.
+    @Published var streak = 0
+    @Published var penaltyActive = false
+
+    /// User-built Gates.
+    @Published var customRoutines: [Routine] = []
+
     /// Body metrics read from Health to prefill the setup flow.
     @Published var bodyPrefill = BodyPrefill()
 
@@ -25,15 +32,19 @@ final class SystemViewModel: ObservableObject {
 
     private let store: ProfileStore
     private let logStore: DailyLogStore
+    private let routineStore: RoutineStore
     private let source: HealthSource
 
     init(store: ProfileStore = ProfileStore(),
          logStore: DailyLogStore = DailyLogStore(),
+         routineStore: RoutineStore = RoutineStore(),
          source: HealthSource? = nil) {
         self.store = store
         self.logStore = logStore
+        self.routineStore = routineStore
         self.profile = store.load()
         self.todayLog = logStore.log(for: DayKey.string())
+        self.customRoutines = routineStore.load()
         #if canImport(HealthKit)
         self.source = source ?? HealthKitSource()
         #else
@@ -48,6 +59,9 @@ final class SystemViewModel: ObservableObject {
         LevelingEngine.progress(forTotalXP: profile.totalXP)
     }
     var caffeineMg: Int { todayLog.caffeineMg }
+
+    /// Built-in + user-built Gates.
+    var allRoutines: [Routine] { customRoutines + RoutineLibrary.all }
 
     // MARK: Lifecycle
 
@@ -107,11 +121,42 @@ final class SystemViewModel: ObservableObject {
 
     // MARK: Intake & Gate logging
 
-    func addWater(_ ml: Int) { todayLog.waterMl = max(0, todayLog.waterMl + ml); persistLog() }
-    func addCaffeine(_ mg: Int) { todayLog.caffeineMg = max(0, todayLog.caffeineMg + mg); persistLog() }
+    func addWater(_ ml: Int) {
+        todayLog.waterMl = max(0, todayLog.waterMl + ml)
+        persistLog()
+        if ml > 0 { exportToHealth(IntakeWrite(waterMl: Double(ml))) }
+    }
 
-    func logMeal(_ entry: MealEntry) { todayLog.meals.append(entry); persistLog() }
+    func addCaffeine(_ mg: Int) {
+        todayLog.caffeineMg = max(0, todayLog.caffeineMg + mg)
+        persistLog()
+        if mg > 0 { exportToHealth(IntakeWrite(caffeineMg: Double(mg))) }
+    }
+
+    func logMeal(_ entry: MealEntry) {
+        todayLog.meals.append(entry)
+        persistLog()
+        exportToHealth(IntakeWrite(energyKcal: Double(entry.calories), proteinG: entry.proteinG, date: entry.loggedAt))
+    }
+
     func removeMeal(_ id: UUID) { todayLog.meals.removeAll { $0.id == id }; persistLog() }
+
+    /// Fire-and-forget mirror into Apple Health.
+    private func exportToHealth(_ write: IntakeWrite) {
+        Task { await source.export(write) }
+    }
+
+    // MARK: Custom Gates
+
+    func addCustomRoutine(_ routine: Routine) {
+        customRoutines.insert(routine, at: 0)
+        routineStore.save(customRoutines)
+    }
+
+    func deleteCustomRoutine(_ id: String) {
+        customRoutines.removeAll { $0.id == id }
+        routineStore.save(customRoutines)
+    }
 
     /// Mark a Gate (routine) cleared: its minutes count toward strength, and a
     /// completion bonus is paid once per routine per day.
@@ -161,6 +206,22 @@ final class SystemViewModel: ObservableObject {
             profile.questLedger[today, default: 0] += q.xpReward
         }
         quests = qs
+
+        // Streak & Penalty Zone: a day clears when all mandatory quests are done.
+        let mandatory = qs.filter { $0.isMandatory }
+        let dayCleared = !mandatory.isEmpty && mandatory.allSatisfy { $0.isComplete }
+        if dayCleared && !profile.clearedDays.contains(today) {
+            profile.clearedDays.insert(today)
+            let s = StreakEngine.currentStreak(clearedDays: profile.clearedDays)
+            let bonusID = "\(today).streak"
+            if !profile.awardedQuestIDs.contains(bonusID) {
+                profile.awardedQuestIDs.insert(bonusID)
+                profile.questLedger[today, default: 0] += StreakEngine.streakBonus(forStreak: s)
+            }
+        }
+        streak = StreakEngine.currentStreak(clearedDays: profile.clearedDays)
+        penaltyActive = StreakEngine.penaltyActive(clearedDays: profile.clearedDays, createdAt: profile.createdAt)
+
         stats = SystemFormula.stats(from: snap, level: profile.level)
         conditionModifier = SystemFormula.conditionModifier(from: snap)
 
@@ -195,8 +256,10 @@ final class SystemViewModel: ObservableObject {
     func resetProgress() {
         store.reset()
         logStore.reset()
+        routineStore.reset()
         profile = HunterProfile()
         todayLog = DailyLog(dayKey: DayKey.string())
+        customRoutines = []
         Task { await start() }
     }
 }

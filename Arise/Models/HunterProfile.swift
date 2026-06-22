@@ -21,6 +21,10 @@ struct HunterProfile: Codable {
     /// Quest ids already awarded, so a quest pays out once.
     var awardedQuestIDs: Set<String> = []
 
+    /// Days (yyyy-MM-dd) on which every mandatory quest was cleared. Drives the
+    /// streak and the penalty zone.
+    var clearedDays: Set<String> = []
+
     /// Last level the user has actually *seen*, for level-up detection.
     var lastSeenLevel: Int = 1
 }

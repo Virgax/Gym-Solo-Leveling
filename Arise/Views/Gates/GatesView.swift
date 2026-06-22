@@ -3,33 +3,66 @@ import SwiftUI
 /// Routine picker — each routine is a "Gate" to clear for XP.
 struct GatesView: View {
     @ObservedObject var vm: SystemViewModel
+    @State private var showBuilder = false
 
     var body: some View {
         ScrollView {
             VStack(spacing: 14) {
                 header
-                ForEach(RoutineLibrary.all) { routine in
-                    NavigationLink {
-                        GateSessionView(vm: vm, routine: routine)
-                    } label: {
-                        RoutineCard(routine: routine,
-                                    cleared: vm.todayLog.completedGateIDs.contains(routine.id))
+
+                if !vm.customRoutines.isEmpty {
+                    sectionLabel("Your Gates")
+                    ForEach(vm.customRoutines) { routine in
+                        gateLink(routine)
+                            .contextMenu {
+                                Button(role: .destructive) { vm.deleteCustomRoutine(routine.id) } label: {
+                                    Label("Delete Gate", systemImage: "trash")
+                                }
+                            }
                     }
-                    .buttonStyle(.plain)
                 }
+
+                sectionLabel("System Gates")
+                ForEach(RoutineLibrary.all) { gateLink($0) }
+
                 Color.clear.frame(height: 20)
             }
             .padding(16)
         }
+        .sheet(isPresented: $showBuilder) { RoutineBuilderView(vm: vm) }
+    }
+
+    private func gateLink(_ routine: Routine) -> some View {
+        NavigationLink {
+            GateSessionView(vm: vm, routine: routine)
+        } label: {
+            RoutineCard(routine: routine, cleared: vm.todayLog.completedGateIDs.contains(routine.id))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func sectionLabel(_ text: String) -> some View {
+        Text(text.uppercased())
+            .font(.system(.caption, design: .monospaced).weight(.bold)).tracking(2)
+            .foregroundStyle(SystemTheme.textSecondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 10) {
             Text("GATES")
                 .font(.system(.largeTitle, design: .rounded).weight(.heavy)).tracking(2)
                 .foregroundStyle(SystemTheme.textPrimary)
             Text("Clear a Gate to earn XP and raise STR & END. Each is a structured routine — sets, reps and rest.")
                 .font(.system(.subheadline, design: .rounded)).foregroundStyle(SystemTheme.textSecondary)
+            Button { showBuilder = true } label: {
+                Label("Build a Gate", systemImage: "hammer.fill")
+                    .font(.system(.subheadline, design: .rounded).weight(.bold))
+                    .frame(maxWidth: .infinity).padding(.vertical, 11)
+                    .background(Capsule().fill(SystemTheme.accentDeep.opacity(0.5)))
+                    .overlay(Capsule().stroke(SystemTheme.accent, lineWidth: 1))
+                    .foregroundStyle(SystemTheme.textPrimary)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.bottom, 4)

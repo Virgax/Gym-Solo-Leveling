@@ -29,14 +29,40 @@ final class HealthKitSource: HealthSource {
         return types
     }
 
+    /// Dietary types we write back (so logged fuel syncs into Apple Health).
+    private var shareTypes: Set<HKSampleType> {
+        let ids: [HKQuantityTypeIdentifier] = [
+            .dietaryWater, .dietaryCaffeine, .dietaryEnergyConsumed, .dietaryProtein,
+        ]
+        return Set(ids.compactMap { HKQuantityType.quantityType(forIdentifier: $0) })
+    }
+
     func requestAuthorization() async -> Bool {
         guard isAvailable else { return false }
         do {
-            try await store.requestAuthorization(toShare: [], read: readTypes)
+            try await store.requestAuthorization(toShare: shareTypes, read: readTypes)
             return true
         } catch {
             return false
         }
+    }
+
+    // MARK: Write-through export
+
+    func export(_ write: IntakeWrite) async {
+        guard isAvailable else { return }
+        var samples: [HKQuantitySample] = []
+        func add(_ id: HKQuantityTypeIdentifier, _ value: Double?, _ unit: HKUnit) {
+            guard let v = value, v != 0, let type = HKQuantityType.quantityType(forIdentifier: id) else { return }
+            let qty = HKQuantity(unit: unit, doubleValue: abs(v))
+            samples.append(HKQuantitySample(type: type, quantity: qty, start: write.date, end: write.date))
+        }
+        add(.dietaryWater, write.waterMl, .literUnit(with: .milli))
+        add(.dietaryCaffeine, write.caffeineMg, .gramUnit(with: .milli))
+        add(.dietaryEnergyConsumed, write.energyKcal, .kilocalorie())
+        add(.dietaryProtein, write.proteinG, .gram())
+        guard !samples.isEmpty else { return }
+        try? await store.save(samples)
     }
 
     // MARK: Snapshot

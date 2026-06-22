@@ -216,6 +216,8 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "The System reads your workouts, steps, heart rate, recovery and body data (including anything RingConn and Eufy sync into Apple Health) to calculate your Hunter stats, XP and rank.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "The System writes the water, caffeine and meals you log back into Apple Health so your fuel stays in sync.";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -245,6 +247,8 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "The System reads your workouts, steps, heart rate, recovery and body data (including anything RingConn and Eufy sync into Apple Health) to calculate your Hunter stats, XP and rank.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "The System writes the water, caffeine and meals you log back into Apple Health so your fuel stays in sync.";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
