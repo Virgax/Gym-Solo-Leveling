@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ACTIVITY, ActivityKey, BodyProfile, GOAL_LABEL, Goal, HealthMath, MEAL_TYPES, MealType,
   ROUTINES, RankKey, Routine, STATS, Sex, Stat, Quest, questComplete, questFraction,
@@ -358,7 +358,7 @@ function Slider({ label, v, min, max, onChange }: { label: string; v: number; mi
 
 // ---------- Account / Auth ----------
 function AccountBar({ auth, onLogin }: { auth: Auth; onLogin: () => void }) {
-  if (!auth.ready) return null;
+  if (!auth.configured) return null;
   if (auth.user) {
     return (
       <div className="panel row" style={{ padding: "10px 14px" }}>
@@ -379,28 +379,24 @@ function AccountBar({ auth, onLogin }: { auth: Auth; onLogin: () => void }) {
 }
 
 function LoginModal({ auth, onClose }: { auth: Auth; onClose: () => void }) {
-  const [email, setEmail] = useState("");
-  const [sent, setSent] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const btnRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    let tries = 0;
+    const id = setInterval(() => {
+      if (btnRef.current && auth.renderButton(btnRef.current)) clearInterval(id);
+      else if (++tries > 50) clearInterval(id); // give up after ~5s
+    }, 100);
+    return () => clearInterval(id);
+  }, [auth]);
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "grid", placeItems: "center", zIndex: 20, padding: 20 }} onClick={onClose}>
       <div className="panel" style={{ maxWidth: 380, width: "100%" }} onClick={(e) => e.stopPropagation()}>
         <div className="panel-title">Sign in to sync</div>
-        {sent ? (
-          <div className="muted" style={{ fontSize: 14 }}>Check your email — we sent a magic link to <b>{email}</b>. Open it on this device to finish signing in.</div>
-        ) : (
-          <>
-            <button className="btn" style={{ width: "100%" }} onClick={() => auth.signInWithGoogle()}>Continue with Google</button>
-            <div className="muted" style={{ textAlign: "center", fontSize: 12, margin: "12px 0" }}>or</div>
-            <label className="field">Email</label>
-            <input value={email} onChange={(e) => setEmail(e.target.value)} inputMode="email" placeholder="you@email.com" />
-            <button className="btn primary" style={{ marginTop: 12 }} disabled={busy || !email.includes("@")}
-              onClick={async () => { setBusy(true); await auth.signInWithEmail(email); setBusy(false); setSent(true); }}>
-              {busy ? "Sending…" : "Send magic link"}
-            </button>
-          </>
-        )}
-        <button className="btn small" style={{ marginTop: 12, width: "100%" }} onClick={onClose}>Close</button>
+        <div ref={btnRef} style={{ display: "flex", justifyContent: "center", minHeight: 44, margin: "8px 0" }} />
+        <div className="muted" style={{ fontSize: 12, textAlign: "center" }}>
+          Your progress syncs to your account across devices. Apple &amp; email sign-in coming soon.
+        </div>
+        <button className="btn small" style={{ marginTop: 14, width: "100%" }} onClick={onClose}>Close</button>
       </div>
     </div>
   );
@@ -418,7 +414,7 @@ const TABS: { key: Tab; label: string; icon: string }[] = [
 export default function App() {
   const a = useArise();
   const auth = useAuth();
-  useCloudSync(auth.user, a.state, a.replaceState);
+  useCloudSync(auth.jwt, a.state, a.replaceState);
   const [tab, setTab] = useState<Tab>("status");
   const [showLogin, setShowLogin] = useState(false);
 

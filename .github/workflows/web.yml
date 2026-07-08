@@ -37,8 +37,8 @@ jobs:
           VITE_BASE: /Gym-Solo-Leveling/
           # Optional — set these under Settings → Secrets and variables →
           # Actions → Variables to enable cloud sync. Blank = local-first.
-          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:

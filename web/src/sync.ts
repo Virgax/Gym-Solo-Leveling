@@ -1,51 +1,41 @@
 import { useEffect, useRef } from "react";
-import type { User } from "@supabase/supabase-js";
-import { supabase } from "./supabase";
+import { getRemoteState, putRemoteState } from "./api";
 import { AppState, getLocalTs } from "./store";
 
-const TABLE = "user_state";
-
-async function push(userId: string, state: AppState) {
-  if (!supabase) return;
-  await supabase.from(TABLE).upsert({ user_id: userId, state, updated_at: new Date().toISOString() });
-}
-
 /**
- * Two-way cloud sync (last-write-wins):
+ * Two-way cloud sync against the Railway API (last-write-wins):
  *  - On sign-in, pull the remote copy if it's newer than local; otherwise seed
  *    the remote from local.
- *  - While signed in, debounce-push local changes to the cloud.
- * The app keeps working offline; this only runs when configured + signed in.
+ *  - While signed in, debounce-push local changes.
+ * Fully local-first: nothing runs until there's a session JWT.
  */
-export function useCloudSync(user: User | null, state: AppState, replaceState: (s: AppState) => void) {
+export function useCloudSync(jwt: string | null, state: AppState, replaceState: (s: AppState) => void) {
   const pulled = useRef(false);
 
   useEffect(() => {
-    if (!supabase || !user) { pulled.current = false; return; }
+    if (!jwt) { pulled.current = false; return; }
     let cancelled = false;
     (async () => {
-      const { data } = await supabase!
-        .from(TABLE)
-        .select("state, updated_at")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if (cancelled) return;
-      if (data?.state) {
-        const remoteTs = new Date(data.updated_at as string).getTime();
-        if (remoteTs > getLocalTs()) replaceState(data.state as AppState);
-        else await push(user.id, state);
-      } else {
-        await push(user.id, state);
+      try {
+        const { state: remote, updatedAt } = await getRemoteState(jwt);
+        if (cancelled) return;
+        if (remote && updatedAt && new Date(updatedAt).getTime() > getLocalTs()) {
+          replaceState(remote as AppState);
+        } else {
+          await putRemoteState(jwt, state);
+        }
+      } catch (e) {
+        console.error("[sync] pull failed", e);
       }
       pulled.current = true;
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [jwt]);
 
   useEffect(() => {
-    if (!supabase || !user || !pulled.current) return;
-    const t = setTimeout(() => { void push(user.id, state); }, 1500);
+    if (!jwt || !pulled.current) return;
+    const t = setTimeout(() => { putRemoteState(jwt, state).catch((e) => console.error("[sync] push failed", e)); }, 1500);
     return () => clearTimeout(t);
-  }, [state, user]);
+  }, [state, jwt]);
 }
