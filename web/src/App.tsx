@@ -5,6 +5,8 @@ import {
   rankForLevel, rankTitle, routineSets, routineXP,
 } from "./engine";
 import { Arise, useArise } from "./store";
+import { Auth, useAuth } from "./auth";
+import { useCloudSync } from "./sync";
 
 const STAT_ICON: Record<string, string> = { STR: "🏋️", AGI: "🏃", VIT: "❤️", END: "🔥", SEN: "🌙" };
 
@@ -354,6 +356,56 @@ function Slider({ label, v, min, max, onChange }: { label: string; v: number; mi
   );
 }
 
+// ---------- Account / Auth ----------
+function AccountBar({ auth, onLogin }: { auth: Auth; onLogin: () => void }) {
+  if (!auth.ready) return null;
+  if (auth.user) {
+    return (
+      <div className="panel row" style={{ padding: "10px 14px" }}>
+        <span>☁️</span>
+        <div className="grow">
+          <div style={{ fontSize: 13, fontWeight: 700 }}>Synced</div>
+          <div className="muted" style={{ fontSize: 11 }}>{auth.user.email}</div>
+        </div>
+        <button className="btn small" onClick={() => auth.signOut()}>Sign out</button>
+      </div>
+    );
+  }
+  return (
+    <div className="panel row card-tap" style={{ padding: "10px 14px" }} onClick={onLogin}>
+      <span>☁️</span><b className="grow" style={{ fontSize: 13 }}>Sign in to sync your progress</b><span className="muted">›</span>
+    </div>
+  );
+}
+
+function LoginModal({ auth, onClose }: { auth: Auth; onClose: () => void }) {
+  const [email, setEmail] = useState("");
+  const [sent, setSent] = useState(false);
+  const [busy, setBusy] = useState(false);
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "grid", placeItems: "center", zIndex: 20, padding: 20 }} onClick={onClose}>
+      <div className="panel" style={{ maxWidth: 380, width: "100%" }} onClick={(e) => e.stopPropagation()}>
+        <div className="panel-title">Sign in to sync</div>
+        {sent ? (
+          <div className="muted" style={{ fontSize: 14 }}>Check your email — we sent a magic link to <b>{email}</b>. Open it on this device to finish signing in.</div>
+        ) : (
+          <>
+            <button className="btn" style={{ width: "100%" }} onClick={() => auth.signInWithGoogle()}>Continue with Google</button>
+            <div className="muted" style={{ textAlign: "center", fontSize: 12, margin: "12px 0" }}>or</div>
+            <label className="field">Email</label>
+            <input value={email} onChange={(e) => setEmail(e.target.value)} inputMode="email" placeholder="you@email.com" />
+            <button className="btn primary" style={{ marginTop: 12 }} disabled={busy || !email.includes("@")}
+              onClick={async () => { setBusy(true); await auth.signInWithEmail(email); setBusy(false); setSent(true); }}>
+              {busy ? "Sending…" : "Send magic link"}
+            </button>
+          </>
+        )}
+        <button className="btn small" style={{ marginTop: 12, width: "100%" }} onClick={onClose}>Close</button>
+      </div>
+    </div>
+  );
+}
+
 // ---------- Shell ----------
 type Tab = "status" | "gates" | "fuel" | "quests";
 const TABS: { key: Tab; label: string; icon: string }[] = [
@@ -365,10 +417,24 @@ const TABS: { key: Tab; label: string; icon: string }[] = [
 
 export default function App() {
   const a = useArise();
+  const auth = useAuth();
+  useCloudSync(auth.user, a.state, a.replaceState);
   const [tab, setTab] = useState<Tab>("status");
+  const [showLogin, setShowLogin] = useState(false);
+
+  const account = auth.configured ? <AccountBar auth={auth} onLogin={() => setShowLogin(true)} /> : null;
+  const loginModal = showLogin ? <LoginModal auth={auth} onClose={() => setShowLogin(false)} /> : null;
 
   if (!a.state.onboardingDone) {
-    return <div className="content"><div className="content-inner"><Onboarding a={a} /></div></div>;
+    return (
+      <div className="content">
+        <div className="content-inner">
+          {account}
+          <Onboarding a={a} />
+        </div>
+        {loginModal}
+      </div>
+    );
   }
   return (
     <div className="shell">
@@ -381,12 +447,14 @@ export default function App() {
       </nav>
       <main className="content">
         <div className="content-inner">
+          {account}
           {tab === "status" && <StatusScreen a={a} />}
           {tab === "gates" && <GatesScreen a={a} />}
           {tab === "fuel" && <FuelScreen a={a} />}
           {tab === "quests" && <QuestsScreen a={a} />}
         </div>
       </main>
+      {loginModal}
     </div>
   );
 }

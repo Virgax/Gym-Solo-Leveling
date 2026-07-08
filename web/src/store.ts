@@ -6,6 +6,12 @@ import {
 } from "./engine";
 
 const KEY = "arise.state.v1";
+const KEY_TS = "arise.state.ts.v1";
+
+/** Epoch ms of the last local mutation (used for last-write-wins cloud sync). */
+export function getLocalTs(): number {
+  return Number(localStorage.getItem(KEY_TS) ?? 0);
+}
 
 export interface AppState {
   onboardingDone: boolean;
@@ -58,7 +64,10 @@ export function useArise() {
   const [state, setState] = useState<AppState>(load);
 
   useEffect(() => {
-    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* ignore quota */ }
+    try {
+      localStorage.setItem(KEY, JSON.stringify(state));
+      localStorage.setItem(KEY_TS, String(Date.now()));
+    } catch { /* ignore quota */ }
   }, [state]);
 
   const targets = useMemo(() => (state.onboardingDone ? targetsFor(state.body) : DEFAULT_TARGETS), [state.onboardingDone, state.body]);
@@ -109,11 +118,13 @@ export function useArise() {
     };
   }), []);
   const resetAll = useCallback(() => { localStorage.removeItem(KEY); setState(initial); }, []);
+  // Replace the whole state (used when pulling a newer copy from the cloud).
+  const replaceState = useCallback((s: AppState) => setState({ ...initial, ...s }), []);
 
   return {
     state, targets, intake, totalXp, level, rank, xpProgress, stats, quests,
     streak: sampleSnapshot.workoutStreakDays,
-    completeOnboarding, addWater, addCaffeine, logMeal, removeMeal, completeGate, resetAll,
+    completeOnboarding, addWater, addCaffeine, logMeal, removeMeal, completeGate, resetAll, replaceState,
   };
 }
 
