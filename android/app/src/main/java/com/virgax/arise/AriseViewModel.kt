@@ -23,8 +23,11 @@ class AriseViewModel : ViewModel() {
     var body by mutableStateOf(BodyProfile())
         private set
 
-    // Sample physiological data until Health Connect is wired in.
-    private val snapshot = HealthSnapshot.sample
+    // Physiological data: sample until Health Connect provides the real thing.
+    var snapshot by mutableStateOf(HealthSnapshot.sample)
+        private set
+    var healthConnected by mutableStateOf(false)
+        private set
 
     var waterMl by mutableIntStateOf(0)
         private set
@@ -65,6 +68,13 @@ class AriseViewModel : ViewModel() {
         hunterName = name.trim().ifEmpty { "Hunter" }
         body = profile
         onboardingDone = true
+        awardQuests()
+    }
+
+    /** Replace the sample data with a real snapshot read from Health Connect. */
+    fun applyHealth(real: HealthSnapshot) {
+        snapshot = real
+        healthConnected = true
         awardQuests()
     }
 

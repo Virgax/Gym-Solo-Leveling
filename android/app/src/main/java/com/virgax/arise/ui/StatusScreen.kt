@@ -36,6 +36,7 @@ fun StatusScreen(vm: AriseViewModel) {
             letterSpacing = 3.sp,
             fontSize = 13.sp,
         )
+        HealthConnectCard(vm)
         StreakChip(vm.streak)
         StatusPanel(vm)
         VitalsPanel(vm.body)

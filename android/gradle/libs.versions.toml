@@ -5,6 +5,8 @@ coreKtx = "1.13.1"
 lifecycle = "2.8.6"
 activityCompose = "1.9.2"
 composeBom = "2024.09.03"
+healthConnect = "1.1.0-alpha07"
+coroutines = "1.8.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -20,6 +22,8 @@ androidx-material3 = { group = "androidx.compose.material3", name = "material3" 
 androidx-material3-window = { group = "androidx.compose.material3", name = "material3-window-size-class" }
 androidx-material3-navsuite = { group = "androidx.compose.material3", name = "material3-adaptive-navigation-suite" }
 androidx-material-icons = { group = "androidx.compose.material", name = "material-icons-extended" }
+androidx-health-connect = { group = "androidx.health.connect", name = "connect-client", version.ref = "healthConnect" }
+kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
