@@ -6,6 +6,56 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		2B00000000000000000000B1 /* SharedSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B00000000000000000000A1 /* SharedSnapshot.swift */; };
+		2B00000000000000000000B2 /* SharedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B00000000000000000000A2 /* SharedStore.swift */; };
+		2B00000000000000000000B3 /* GateActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B00000000000000000000A3 /* GateActivityAttributes.swift */; };
+		2B00000000000000000000C1 /* SharedSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B00000000000000000000A1 /* SharedSnapshot.swift */; };
+		2B00000000000000000000C2 /* SharedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B00000000000000000000A2 /* SharedStore.swift */; };
+		2B00000000000000000000C3 /* GateActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B00000000000000000000A3 /* GateActivityAttributes.swift */; };
+		2B00000000000000000000E1 /* AriseWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B00000000000000000000D1 /* AriseWidgetBundle.swift */; };
+		2B00000000000000000000E2 /* StatusWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B00000000000000000000D2 /* StatusWidget.swift */; };
+		2B00000000000000000000E3 /* GateLiveActivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B00000000000000000000D3 /* GateLiveActivityWidget.swift */; };
+		2B0000000000000000000F11 /* AriseWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 2B0000000000000000000F00 /* AriseWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		2B0000000000000000000F13 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1A0000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 2B0000000000000000000F01;
+			remoteInfo = AriseWidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		2B0000000000000000000F10 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				2B0000000000000000000F11 /* AriseWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		1A0000000000000000000005 /* Arise.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Arise.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		2B00000000000000000000A1 /* SharedSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedSnapshot.swift; sourceTree = "<group>"; };
+		2B00000000000000000000A2 /* SharedStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedStore.swift; sourceTree = "<group>"; };
+		2B00000000000000000000A3 /* GateActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GateActivityAttributes.swift; sourceTree = "<group>"; };
+		2B00000000000000000000D1 /* AriseWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AriseWidgetBundle.swift; sourceTree = "<group>"; };
+		2B00000000000000000000D2 /* StatusWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusWidget.swift; sourceTree = "<group>"; };
+		2B00000000000000000000D3 /* GateLiveActivityWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GateLiveActivityWidget.swift; sourceTree = "<group>"; };
+		2B00000000000000000000D4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		2B00000000000000000000D5 /* AriseWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AriseWidget.entitlements; sourceTree = "<group>"; };
+		2B0000000000000000000F00 /* AriseWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = AriseWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		1A0000000000000000000004 /* Arise */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
@@ -14,12 +64,15 @@
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
-/* Begin PBXFileReference section */
-		1A0000000000000000000005 /* Arise.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Arise.app; sourceTree = BUILT_PRODUCTS_DIR; };
-/* End PBXFileReference section */
-
 /* Begin PBXFrameworksBuildPhase section */
 		1A0000000000000000000008 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2B0000000000000000000F03 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -33,6 +86,8 @@
 			isa = PBXGroup;
 			children = (
 				1A0000000000000000000004 /* Arise */,
+				2B00000000000000000000A0 /* Shared */,
+				2B00000000000000000000D0 /* AriseWidget */,
 				1A0000000000000000000003 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,8 +96,31 @@
 			isa = PBXGroup;
 			children = (
 				1A0000000000000000000005 /* Arise.app */,
+				2B0000000000000000000F00 /* AriseWidgetExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		2B00000000000000000000A0 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				2B00000000000000000000A1 /* SharedSnapshot.swift */,
+				2B00000000000000000000A2 /* SharedStore.swift */,
+				2B00000000000000000000A3 /* GateActivityAttributes.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		2B00000000000000000000D0 /* AriseWidget */ = {
+			isa = PBXGroup;
+			children = (
+				2B00000000000000000000D1 /* AriseWidgetBundle.swift */,
+				2B00000000000000000000D2 /* StatusWidget.swift */,
+				2B00000000000000000000D3 /* GateLiveActivityWidget.swift */,
+				2B00000000000000000000D4 /* Info.plist */,
+				2B00000000000000000000D5 /* AriseWidget.entitlements */,
+			);
+			path = AriseWidget;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -55,10 +133,12 @@
 				1A0000000000000000000007 /* Sources */,
 				1A0000000000000000000008 /* Frameworks */,
 				1A0000000000000000000009 /* Resources */,
+				2B0000000000000000000F10 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				2B0000000000000000000F12 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				1A0000000000000000000004 /* Arise */,
@@ -67,6 +147,23 @@
 			productName = Arise;
 			productReference = 1A0000000000000000000005 /* Arise.app */;
 			productType = "com.apple.product-type.application";
+		};
+		2B0000000000000000000F01 /* AriseWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2B0000000000000000000F05 /* Build configuration list for PBXNativeTarget "AriseWidgetExtension" */;
+			buildPhases = (
+				2B0000000000000000000F02 /* Sources */,
+				2B0000000000000000000F03 /* Frameworks */,
+				2B0000000000000000000F04 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = AriseWidgetExtension;
+			productName = AriseWidgetExtension;
+			productReference = 2B0000000000000000000F00 /* AriseWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -79,6 +176,9 @@
 				LastUpgradeCheck = 1600;
 				TargetAttributes = {
 					1A0000000000000000000006 = {
+						CreatedOnToolsVersion = 16.0;
+					};
+					2B0000000000000000000F01 = {
 						CreatedOnToolsVersion = 16.0;
 					};
 				};
@@ -97,12 +197,20 @@
 			projectRoot = "";
 			targets = (
 				1A0000000000000000000006 /* Arise */,
+				2B0000000000000000000F01 /* AriseWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		1A0000000000000000000009 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2B0000000000000000000F04 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -116,10 +224,34 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2B00000000000000000000B1 /* SharedSnapshot.swift in Sources */,
+				2B00000000000000000000B2 /* SharedStore.swift in Sources */,
+				2B00000000000000000000B3 /* GateActivityAttributes.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2B0000000000000000000F02 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2B00000000000000000000E1 /* AriseWidgetBundle.swift in Sources */,
+				2B00000000000000000000E2 /* StatusWidget.swift in Sources */,
+				2B00000000000000000000E3 /* GateLiveActivityWidget.swift in Sources */,
+				2B00000000000000000000C1 /* SharedSnapshot.swift in Sources */,
+				2B00000000000000000000C2 /* SharedStore.swift in Sources */,
+				2B00000000000000000000C3 /* GateActivityAttributes.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		2B0000000000000000000F12 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 2B0000000000000000000F01 /* AriseWidgetExtension */;
+			targetProxy = 2B0000000000000000000F13 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		1A000000000000000000000C /* Debug */ = {
@@ -216,6 +348,8 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "The System reads your workouts, steps, heart rate, recovery and body data (including anything RingConn and Eufy sync into Apple Health) to calculate your Hunter stats, XP and rank.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "The System writes the water, caffeine and meals you log back into Apple Health so your fuel stays in sync.";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -245,6 +379,8 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "The System reads your workouts, steps, heart rate, recovery and body data (including anything RingConn and Eufy sync into Apple Health) to calculate your Hunter stats, XP and rank.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "The System writes the water, caffeine and meals you log back into Apple Health so your fuel stays in sync.";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -257,6 +393,59 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.virgax.arise;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		2B0000000000000000000F06 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = AriseWidget/AriseWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = AriseWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.virgax.arise.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		2B0000000000000000000F07 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = AriseWidget/AriseWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = AriseWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.virgax.arise.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -280,6 +469,15 @@
 			buildConfigurations = (
 				1A000000000000000000000E /* Debug */,
 				1A000000000000000000000F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		2B0000000000000000000F05 /* Build configuration list for PBXNativeTarget "AriseWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2B0000000000000000000F06 /* Debug */,
+				2B0000000000000000000F07 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

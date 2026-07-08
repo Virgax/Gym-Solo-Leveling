@@ -1,30 +1,53 @@
 import Foundation
 import SwiftUI
+#if canImport(WidgetKit)
+import WidgetKit
+#endif
 
-/// Drives the whole experience: pulls a health snapshot, runs it through the
-/// formula, persists progression, and publishes view-ready state.
+/// The app's single source of truth: onboarding, health snapshot, daily intake,
+/// Gates, and progression. Sub-views observe this via @EnvironmentObject.
 @MainActor
 final class SystemViewModel: ObservableObject {
 
-    enum Phase { case needsAuthorization, loading, ready, unavailable }
+    enum Phase { case onboarding, loading, ready, unavailable }
 
-    @Published var phase: Phase = .needsAuthorization
+    @Published var phase: Phase = .loading
     @Published var profile: HunterProfile
     @Published var snapshot = HealthSnapshot()
+    @Published var todayLog: DailyLog
     @Published var stats: [Stat] = []
     @Published var quests: [Quest] = []
     @Published var conditionModifier: Double = 1.0
     @Published var usingMockData = false
 
+    /// Consecutive cleared days, and whether the Penalty Zone is active.
+    @Published var streak = 0
+    @Published var penaltyActive = false
+
+    /// User-built Gates.
+    @Published var customRoutines: [Routine] = []
+
+    /// Body metrics read from Health to prefill the setup flow.
+    @Published var bodyPrefill = BodyPrefill()
+
     /// Set when a refresh crosses a level boundary — the UI shows "ARISE".
     @Published var pendingLevelUp: Int?
 
     private let store: ProfileStore
+    private let logStore: DailyLogStore
+    private let routineStore: RoutineStore
     private let source: HealthSource
 
-    init(store: ProfileStore = ProfileStore(), source: HealthSource? = nil) {
+    init(store: ProfileStore = ProfileStore(),
+         logStore: DailyLogStore = DailyLogStore(),
+         routineStore: RoutineStore = RoutineStore(),
+         source: HealthSource? = nil) {
         self.store = store
+        self.logStore = logStore
+        self.routineStore = routineStore
         self.profile = store.load()
+        self.todayLog = logStore.log(for: DayKey.string())
+        self.customRoutines = routineStore.load()
         #if canImport(HealthKit)
         self.source = source ?? HealthKitSource()
         #else
@@ -32,23 +55,47 @@ final class SystemViewModel: ObservableObject {
         #endif
     }
 
+    // MARK: Derived
+
+    var targets: NutritionTargets { profile.bodyProfile?.targets ?? .default }
     var levelProgress: (into: Int, span: Int) {
         LevelingEngine.progress(forTotalXP: profile.totalXP)
     }
+    var caffeineMg: Int { todayLog.caffeineMg }
+
+    /// Built-in + user-built Gates.
+    var allRoutines: [Routine] { customRoutines + RoutineLibrary.all }
+
+    // MARK: Lifecycle
 
     func start() async {
-        guard source.isAvailable else {
-            // No HealthKit (e.g. Mac/preview): fall back to mock so the System
-            // is still fully explorable.
-            await loadFromMock()
-            return
+        if !profile.onboardingComplete {
+            await beginOnboarding()
+        } else {
+            await authorizeAndRefresh()
         }
+    }
+
+    private func beginOnboarding() async {
         phase = .loading
-        let granted = await source.requestAuthorization()
-        guard granted else {
-            phase = .needsAuthorization
-            return
-        }
+        if source.isAvailable { _ = await source.requestAuthorization() }
+        bodyPrefill = await source.bodyPrefill()
+        phase = .onboarding
+    }
+
+    func completeOnboarding(name: String, body: BodyProfile) async {
+        let trimmed = name.trimmingCharacters(in: .whitespaces)
+        profile.name = trimmed.isEmpty ? "Hunter" : trimmed
+        profile.bodyProfile = body
+        profile.onboardingComplete = true
+        store.save(profile)
+        await authorizeAndRefresh()
+    }
+
+    private func authorizeAndRefresh() async {
+        guard source.isAvailable else { await loadFromMock(); return }
+        phase = .loading
+        _ = await source.requestAuthorization()
         await refresh()
     }
 
@@ -56,52 +103,154 @@ final class SystemViewModel: ObservableObject {
         phase = .loading
         var snap = await source.snapshot()
         if !snap.hasData {
-            // Authorized but nothing to read yet (fresh ring / simulator).
             snap = .sample
             usingMockData = true
         } else {
             usingMockData = false
         }
-        apply(snapshot: snap)
+        snapshot = snap
+        rolloverDayIfNeeded()
+        reduce()
         phase = .ready
     }
 
     private func loadFromMock() async {
         usingMockData = true
-        apply(snapshot: .sample)
+        snapshot = .sample
+        rolloverDayIfNeeded()
+        reduce()
         phase = .ready
     }
 
-    /// Pure reduction of a snapshot into persisted progression + view state.
-    private func apply(snapshot snap: HealthSnapshot) {
-        self.snapshot = snap
-        let today = DayKey.string(for: snap.date)
+    // MARK: Intake & Gate logging
+
+    func addWater(_ ml: Int) {
+        todayLog.waterMl = max(0, todayLog.waterMl + ml)
+        persistLog()
+        if ml > 0 { exportToHealth(IntakeWrite(waterMl: Double(ml))) }
+    }
+
+    func addCaffeine(_ mg: Int) {
+        todayLog.caffeineMg = max(0, todayLog.caffeineMg + mg)
+        persistLog()
+        if mg > 0 { exportToHealth(IntakeWrite(caffeineMg: Double(mg))) }
+    }
+
+    func logMeal(_ entry: MealEntry) {
+        todayLog.meals.append(entry)
+        persistLog()
+        exportToHealth(IntakeWrite(energyKcal: Double(entry.calories), proteinG: entry.proteinG, date: entry.loggedAt))
+    }
+
+    func removeMeal(_ id: UUID) { todayLog.meals.removeAll { $0.id == id }; persistLog() }
+
+    /// Fire-and-forget mirror into Apple Health.
+    private func exportToHealth(_ write: IntakeWrite) {
+        Task { await source.export(write) }
+    }
+
+    // MARK: Custom Gates
+
+    func addCustomRoutine(_ routine: Routine) {
+        customRoutines.insert(routine, at: 0)
+        routineStore.save(customRoutines)
+    }
+
+    func deleteCustomRoutine(_ id: String) {
+        customRoutines.removeAll { $0.id == id }
+        routineStore.save(customRoutines)
+    }
+
+    /// Mark a Gate (routine) cleared: its minutes count toward strength, and a
+    /// completion bonus is paid once per routine per day.
+    func completeGate(_ routine: Routine) {
+        let today = DayKey.string()
+        todayLog.gateMinutes += routine.estMinutes
+        if !todayLog.completedGateIDs.contains(routine.id) {
+            todayLog.completedGateIDs.append(routine.id)
+            let gid = "\(today).gate.\(routine.id)"
+            if !profile.awardedQuestIDs.contains(gid) {
+                profile.awardedQuestIDs.insert(gid)
+                profile.questLedger[today, default: 0] += routine.xpReward
+            }
+        }
+        persistLog()
+    }
+
+    private func persistLog() {
+        logStore.save(todayLog)
+        reduce()
+    }
+
+    private func rolloverDayIfNeeded() {
+        let today = DayKey.string()
+        if todayLog.dayKey != today { todayLog = logStore.log(for: today) }
+    }
+
+    // MARK: Core reduction
+
+    /// Recomputes XP, quests and stats from the current snapshot + intake.
+    private func reduce() {
+        let today = DayKey.string()
         let previousLevel = profile.level
 
-        // 1. Idempotent metric XP for today (replace, don't stack).
-        profile.metricLedger[today] = SystemFormula.dailyMetricXP(from: snap)
+        var snap = snapshot
+        snap.strengthMinutesToday += Double(todayLog.gateMinutes)
 
-        // 2. Quests, with sticky payouts for newly-completed ones.
-        let level = profile.level
-        let quests = QuestEngine.dailyQuests(for: snap, level: level, dayKey: today)
-        for quest in quests where quest.isComplete && !profile.awardedQuestIDs.contains(quest.id) {
-            profile.awardedQuestIDs.insert(quest.id)
-            profile.questLedger[today, default: 0] += quest.xpReward
+        profile.metricLedger[today] =
+            SystemFormula.dailyMetricXP(from: snap) +
+            SystemFormula.nutritionXP(log: todayLog, targets: targets)
+
+        let intake = IntakeSnapshot(todayLog)
+        let qs = QuestEngine.dailyQuests(snapshot: snap, intake: intake, targets: targets,
+                                         level: profile.level, dayKey: today)
+        for q in qs where q.isComplete && !profile.awardedQuestIDs.contains(q.id) {
+            profile.awardedQuestIDs.insert(q.id)
+            profile.questLedger[today, default: 0] += q.xpReward
         }
-        self.quests = quests
+        quests = qs
 
-        // 3. Stats + body-composition modifier.
-        self.stats = SystemFormula.stats(from: snap, level: profile.level)
-        self.conditionModifier = SystemFormula.conditionModifier(from: snap)
+        // Streak & Penalty Zone: a day clears when all mandatory quests are done.
+        let mandatory = qs.filter { $0.isMandatory }
+        let dayCleared = !mandatory.isEmpty && mandatory.allSatisfy { $0.isComplete }
+        if dayCleared && !profile.clearedDays.contains(today) {
+            profile.clearedDays.insert(today)
+            let s = StreakEngine.currentStreak(clearedDays: profile.clearedDays)
+            let bonusID = "\(today).streak"
+            if !profile.awardedQuestIDs.contains(bonusID) {
+                profile.awardedQuestIDs.insert(bonusID)
+                profile.questLedger[today, default: 0] += StreakEngine.streakBonus(forStreak: s)
+            }
+        }
+        streak = StreakEngine.currentStreak(clearedDays: profile.clearedDays)
+        penaltyActive = StreakEngine.penaltyActive(clearedDays: profile.clearedDays, createdAt: profile.createdAt)
 
-        // 4. Level-up detection.
+        stats = SystemFormula.stats(from: snap, level: profile.level)
+        conditionModifier = SystemFormula.conditionModifier(from: snap)
+
         let newLevel = profile.level
         if newLevel > previousLevel && newLevel > profile.lastSeenLevel {
             pendingLevelUp = newLevel
         }
-
         store.save(profile)
+        publishShared()
     }
+
+    /// Mirror a compact summary to the App Group and refresh widgets.
+    private func publishShared() {
+        let p = LevelingEngine.progress(forTotalXP: profile.totalXP)
+        let shared = SharedSnapshot(
+            name: profile.name, level: profile.level, rankRaw: profile.rank.rawValue,
+            xpInto: p.into, xpSpan: p.span, streak: streak,
+            questsDone: quests.filter { $0.isComplete }.count, questsTotal: quests.count,
+            updated: .now)
+        SharedStore.shared.save(shared)
+        #if canImport(WidgetKit)
+        WidgetCenter.shared.reloadAllTimelines()
+        #endif
+    }
+
+    // MARK: Misc
 
     func acknowledgeLevelUp() {
         if let lvl = pendingLevelUp { profile.lastSeenLevel = lvl }
@@ -115,10 +264,20 @@ final class SystemViewModel: ObservableObject {
         store.save(profile)
     }
 
-    /// Dev helper: wipe progression.
+    func updateBody(_ body: BodyProfile) {
+        profile.bodyProfile = body
+        store.save(profile)
+        reduce()
+    }
+
+    /// Wipe everything and return to setup.
     func resetProgress() {
         store.reset()
+        logStore.reset()
+        routineStore.reset()
         profile = HunterProfile()
-        Task { await refresh() }
+        todayLog = DailyLog(dayKey: DayKey.string())
+        customRoutines = []
+        Task { await start() }
     }
 }

@@ -6,6 +6,11 @@ struct HunterProfile: Codable {
     var name: String = "Hunter"
     var createdAt: Date = .now
 
+    /// Set once the first-launch setup flow finishes.
+    var onboardingComplete: Bool = false
+    /// Body metrics + goal captured at setup; drives nutrition targets.
+    var bodyProfile: BodyProfile?
+
     /// Day (yyyy-MM-dd) → XP from continuous metrics. Recomputed/replaced on
     /// each sync so re-reading a day never double-counts.
     var metricLedger: [String: Int] = [:]
@@ -15,6 +20,10 @@ struct HunterProfile: Codable {
 
     /// Quest ids already awarded, so a quest pays out once.
     var awardedQuestIDs: Set<String> = []
+
+    /// Days (yyyy-MM-dd) on which every mandatory quest was cleared. Drives the
+    /// streak and the penalty zone.
+    var clearedDays: Set<String> = []
 
     /// Last level the user has actually *seen*, for level-up detection.
     var lastSeenLevel: Int = 1

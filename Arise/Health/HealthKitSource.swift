@@ -19,21 +19,50 @@ final class HealthKitSource: HealthSource {
         let quantities: [HKQuantityTypeIdentifier] = [
             .stepCount, .activeEnergyBurned, .appleExerciseTime, .distanceWalkingRunning,
             .restingHeartRate, .heartRateVariabilitySDNN, .vo2Max, .oxygenSaturation,
-            .bodyMass, .bodyFatPercentage, .leanBodyMass,
+            .bodyMass, .bodyFatPercentage, .leanBodyMass, .height,
+            .dietaryWater, .dietaryCaffeine, .dietaryEnergyConsumed,
         ]
         quantities.compactMap { HKQuantityType.quantityType(forIdentifier: $0) }.forEach { types.insert($0) }
         if let sleep = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) { types.insert(sleep) }
+        if let sex = HKObjectType.characteristicType(forIdentifier: .biologicalSex) { types.insert(sex) }
+        if let dob = HKObjectType.characteristicType(forIdentifier: .dateOfBirth) { types.insert(dob) }
         return types
+    }
+
+    /// Dietary types we write back (so logged fuel syncs into Apple Health).
+    private var shareTypes: Set<HKSampleType> {
+        let ids: [HKQuantityTypeIdentifier] = [
+            .dietaryWater, .dietaryCaffeine, .dietaryEnergyConsumed, .dietaryProtein,
+        ]
+        return Set(ids.compactMap { HKQuantityType.quantityType(forIdentifier: $0) })
     }
 
     func requestAuthorization() async -> Bool {
         guard isAvailable else { return false }
         do {
-            try await store.requestAuthorization(toShare: [], read: readTypes)
+            try await store.requestAuthorization(toShare: shareTypes, read: readTypes)
             return true
         } catch {
             return false
         }
+    }
+
+    // MARK: Write-through export
+
+    func export(_ write: IntakeWrite) async {
+        guard isAvailable else { return }
+        var samples: [HKQuantitySample] = []
+        func add(_ id: HKQuantityTypeIdentifier, _ value: Double?, _ unit: HKUnit) {
+            guard let v = value, v != 0, let type = HKQuantityType.quantityType(forIdentifier: id) else { return }
+            let qty = HKQuantity(unit: unit, doubleValue: abs(v))
+            samples.append(HKQuantitySample(type: type, quantity: qty, start: write.date, end: write.date))
+        }
+        add(.dietaryWater, write.waterMl, .literUnit(with: .milli))
+        add(.dietaryCaffeine, write.caffeineMg, .gramUnit(with: .milli))
+        add(.dietaryEnergyConsumed, write.energyKcal, .kilocalorie())
+        add(.dietaryProtein, write.proteinG, .gram())
+        guard !samples.isEmpty else { return }
+        try? await store.save(samples)
     }
 
     // MARK: Snapshot
@@ -77,6 +106,29 @@ final class HealthKitSource: HealthSource {
         s.avgSleepHours = await averageSleepHours(from: start30, to: now)
 
         return s
+    }
+
+    // MARK: Onboarding prefill
+
+    func bodyPrefill() async -> BodyPrefill {
+        guard isAvailable else { return BodyPrefill() }
+        var prefill = BodyPrefill()
+
+        // Characteristics are read synchronously and may throw if undisclosed.
+        if let sexObj = try? store.biologicalSex() {
+            switch sexObj.biologicalSex {
+            case .male: prefill.sex = .male
+            case .female: prefill.sex = .female
+            case .other: prefill.sex = .other
+            default: break
+            }
+        }
+        if let dob = try? store.dateOfBirthComponents(), let date = dob.date {
+            prefill.birthDate = date
+        }
+        prefill.heightCm = await latest(.height, unit: .meterUnit(with: .centi))
+        prefill.weightKg = await latest(.bodyMass, unit: .gramUnit(with: .kilo))
+        return prefill
     }
 
     // MARK: Workout activity groups

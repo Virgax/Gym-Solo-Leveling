@@ -4,11 +4,15 @@ import Foundation
 struct Quest: Identifiable, Hashable {
     enum Metric: String {
         case strengthMinutes, steps, activeEnergy, sleepHours
+        case water, protein, mealsLogged
     }
+
+    enum Category: String { case training, recovery, fuel }
 
     let id: String
     let title: String
     let metric: Metric
+    let category: Category
     let target: Double
     let progress: Double
     let unit: String

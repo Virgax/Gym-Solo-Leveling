@@ -110,7 +110,57 @@ Default daily set (targets scale with level):
 
 ---
 
-## 5. Roadmap
+## 5. First-launch setup (Onboarding)
+
+The very first launch runs a 4-step flow (`OnboardingView`), gated until
+`profile.onboardingComplete`:
+
+1. **Welcome + Health permission** — requests HealthKit read access.
+2. **Body metrics** — *prefilled from Apple Health* when available (biological
+   sex, date of birth, height, latest weight); anything missing is entered
+   manually via sliders/pickers. BMI is shown live.
+3. **Goal** — Lose fat / Maintain / Build muscle.
+4. **Calibration summary** — the System computes and shows your targets.
+
+Derived math (`HealthMath`, all standard formulas, explained in-app):
+- **BMI** = kg / m²
+- **BMR** = Mifflin–St Jeor (sex-specific)
+- **TDEE** = BMR × activity factor (1.2 … 1.9)
+- **Calories** = TDEE shifted by goal (−500 / 0 / +350)
+- **Protein** = 1.8–2.0 g/kg · **Water** = ~35 mL/kg (clamped) ·
+  **Caffeine ceiling** = min(400 mg, 6 mg/kg)
+
+## 6. Fuel & Hydration tracking
+
+A per-day `DailyLog` (idempotent, keyed by date) tracks:
+- **Water** (mL) and **Caffeine** (mg) via quick-add buttons, against targets.
+- **Meal schedule** — breakfast, morning snack, lunch, afternoon snack, dinner —
+  each with logged items + **calories** (and optional protein). Totals roll up
+  to a daily calorie/protein readout vs. target.
+
+These feed XP (`SystemFormula.nutritionXP`) and three **Fuel quests** (Hydrate,
+Hit Protein, Fuel the Machine). Going over the caffeine ceiling is surfaced as a
+recovery debuff.
+
+> Phase 2: read/write these through HealthKit's dietary types so logs sync both
+> ways with Apple Health.
+
+## 7. Gates (Routines & execution)
+
+Inspired by Muscle-Monster-style planners. A **Gate** is a structured routine
+(`Routine` → `RoutineExercise` → `Exercise`) with sets, reps, rest and a
+difficulty rank. The built-in `RoutineLibrary` ships Push / Pull / Legs /
+Full-Body / Core / Home gates.
+
+**Execution** (`GateSessionView`): tap to check off each set, an automatic **rest
+timer** counts down between sets, and a progress bar tracks completion. Clearing
+a Gate pays `xpReward` (once/day) and adds its minutes to today's **strength**,
+so it flows into STR/END and the training quest.
+
+> Phase 2: 1000+ movement library with video cues, AI-generated plans, a custom
+> routine builder, and writing the session back to HealthKit as a workout.
+
+## 8. Roadmap
 
 - **Phase 1 (this build):** HealthKit ingestion, formula, leveling, ranks,
   stats, daily quests, the System UI (Status window, quests, level-up "ARISE").
