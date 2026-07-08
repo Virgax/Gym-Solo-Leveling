@@ -30,8 +30,10 @@ function Panel({ title, children, onClick, className }: { title?: string; childr
 function RankBadge({ rankKey, size = 64 }: { rankKey: RankKey; size?: number }) {
   const color = { E: "#8FA6C4", D: "#4ED2A0", C: "#35C2FF", B: "#9B6BFF", A: "#FFC857", S: "#FF8A3D", MONARCH: "#FF4D6D" }[rankKey];
   return (
-    <div className="badge" style={{ width: size, height: size, color, border: `2px solid ${color}`, background: `${color}22`, fontSize: size / 2.4 }}>
-      {rankKey === "MONARCH" ? "M" : rankKey}
+    <div className="rank-badge" style={{ width: size, height: size, ["--c"]: color } as any}>
+      <span className="hex-ring" />
+      <span className="hex-core" />
+      <span className="hex-letter" style={{ fontSize: size / 2.6 }}>{rankKey === "MONARCH" ? "M" : rankKey}</span>
     </div>
   );
 }
@@ -57,12 +59,12 @@ function StatusScreen({ a }: { a: Arise }) {
         <div className="row">
           <RankBadge rankKey={a.rank.key} />
           <div className="grow" style={{ marginLeft: 6 }}>
-            <div style={{ fontSize: 24, fontWeight: 900 }}>{a.state.hunterName}</div>
-            <div style={{ color: a.rank.color, fontWeight: 700 }}>{rankTitle(a.rank.key)}</div>
+            <div className="screen-title" style={{ fontSize: 23 }}>{a.state.hunterName}</div>
+            <div style={{ color: a.rank.color, fontWeight: 700, letterSpacing: 1, textShadow: `0 0 12px ${a.rank.color}66` }}>{rankTitle(a.rank.key)}</div>
           </div>
           <div style={{ textAlign: "center" }}>
-            <div className="muted" style={{ fontSize: 11, fontWeight: 700 }}>LV</div>
-            <div className="stat-num" style={{ fontSize: 36, color: "var(--accent)" }}>{a.level}</div>
+            <div className="muted" style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2 }}>LV</div>
+            <div className="lv-num" style={{ fontSize: 42 }}>{a.level}</div>
           </div>
         </div>
         <div className="spread" style={{ margin: "14px 0 4px", fontSize: 11 }}>
@@ -249,7 +251,7 @@ function GatesScreen({ a }: { a: Arise }) {
   if (active) return <GateSession routine={active} onClear={() => { a.completeGate(active); setActive(null); }} onBack={() => setActive(null)} />;
   return (
     <>
-      <div style={{ fontSize: 30, fontWeight: 900 }}>GATES</div>
+      <div className="screen-title" style={{ fontSize: 30 }}>GATES</div>
       <div className="muted" style={{ fontSize: 14 }}>Clear a Gate to earn XP and raise STR &amp; END. Each is a structured routine — sets, reps, rest.</div>
       {ROUTINES.map((r) => (
         <Panel key={r.id} className="card-tap" onClick={() => setActive(r)}>
@@ -279,7 +281,7 @@ function GateSession({ routine, onClear, onBack }: { routine: Routine; onClear: 
         <span className="grow" />
         <b style={{ color: "var(--accent)" }}>{doneSets} / {total} sets</b>
       </div>
-      <div style={{ fontSize: 24, fontWeight: 900 }}>{routine.name}</div>
+      <div className="screen-title" style={{ fontSize: 24 }}>{routine.name}</div>
       <Bar value={total > 0 ? doneSets / total : 0} />
       {routine.exercises.map((e, i) => (
         <Panel key={i}>
@@ -317,7 +319,7 @@ function Onboarding({ a }: { a: Arise }) {
   const tdee = HealthMath.tdee(HealthMath.bmr(w, h, age, sex), act);
   return (
     <>
-      <div style={{ fontSize: 26, fontWeight: 900 }}>THE SYSTEM HAS CHOSEN YOU</div>
+      <div className="screen-title" style={{ fontSize: 26 }}>THE SYSTEM HAS CHOSEN YOU</div>
       <div className="muted" style={{ fontSize: 14 }}>Set up your Hunter. Your data stays on this device (works offline). Add it to your home screen to keep it one tap away.</div>
       <Panel title="Your Vessel">
         <label className="field">Hunter name</label>
