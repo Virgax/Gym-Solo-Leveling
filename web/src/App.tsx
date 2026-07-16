@@ -305,23 +305,107 @@ function GateSession({ routine, onClear, onBack }: { routine: Routine; onClear: 
   );
 }
 
-// ---------- Onboarding ----------
-function Onboarding({ a }: { a: Arise }) {
-  const [name, setName] = useState("Hunter");
+// ---------- Onboarding (stepped: welcome/login → connect → profile) ----------
+function GoogleSignInButton({ auth }: { auth: Auth }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    let tries = 0;
+    const id = setInterval(() => {
+      if (ref.current && auth.renderButton(ref.current)) clearInterval(id);
+      else if (++tries > 50) clearInterval(id);
+    }, 100);
+    return () => clearInterval(id);
+  }, [auth]);
+  return <div ref={ref} style={{ display: "flex", justifyContent: "center", minHeight: 44 }} />;
+}
+
+const KG_PER_LB = 0.45359237;
+const CM_PER_IN = 2.54;
+const ftIn = (cm: number) => { const t = Math.round(cm / CM_PER_IN); return `${Math.floor(t / 12)}'${t % 12}"`; };
+
+function Onboarding({ a, auth }: { a: Arise; auth: Auth }) {
+  const [step, setStep] = useState(0);
+  const [units, setUnits] = useState<"metric" | "imperial">(a.state.units);
+  const [name, setName] = useState(auth.user?.email?.split("@")[0] ?? "Hunter");
   const [sex, setSex] = useState<Sex>("male");
   const [age, setAge] = useState(25);
-  const [h, setH] = useState(175);
-  const [w, setW] = useState(75);
+  const [h, setH] = useState(175); // stored in cm
+  const [w, setW] = useState(75); // stored in kg
   const [act, setAct] = useState<ActivityKey>("moderate");
   const [goal, setGoal] = useState<Goal>("maintain");
-  const profile: BodyProfile = { sex, age, heightCm: h, weightKg: w, activity: act, goal };
+
+  // Once signed in, move past the welcome step.
+  useEffect(() => { if (auth.user && step === 0) setStep(1); }, [auth.user]);
+
+  // Step 0 — Welcome / create account / sign in
+  if (step === 0) {
+    return (
+      <>
+        <div style={{ height: 10 }} />
+        <div className="eyebrow" style={{ textAlign: "center" }}>THE SYSTEM</div>
+        <div className="screen-title" style={{ fontSize: 44, textAlign: "center", lineHeight: 1 }}>ARISE</div>
+        <div className="muted" style={{ textAlign: "center", fontSize: 15 }}>
+          Turn your training into an RPG. Level up, rank up, clear Gates.
+        </div>
+        <Panel title="Enter the System">
+          {auth.configured ? (
+            <>
+              <div className="muted" style={{ fontSize: 13, marginBottom: 12 }}>Create your account or sign in to sync your progress across devices.</div>
+              <GoogleSignInButton auth={auth} />
+              <div className="muted" style={{ textAlign: "center", fontSize: 12, margin: "12px 0" }}>or</div>
+              <button className="btn" style={{ width: "100%" }} onClick={() => setStep(1)}>Continue without an account</button>
+            </>
+          ) : (
+            <>
+              <div className="muted" style={{ fontSize: 13, marginBottom: 12 }}>Your progress is saved on this device. (Cloud sign-in appears once it's enabled.)</div>
+              <button className="btn primary" onClick={() => setStep(1)}>Enter the System</button>
+            </>
+          )}
+        </Panel>
+        <div style={{ height: 24 }} />
+      </>
+    );
+  }
+
+  // Step 1 — Connect your data
+  if (step === 1) {
+    const sources = ["Apple Health", "Google / Health Connect", "Samsung Health", "Oura", "Fitbit", "Garmin"];
+    return (
+      <>
+        <div className="eyebrow">STEP 2 · CONNECT</div>
+        <div className="screen-title" style={{ fontSize: 24 }}>Connect your data</div>
+        <div className="muted" style={{ fontSize: 14 }}>Link your health sources so you don't type everything — just confirm the numbers.</div>
+        <Panel title="Health Sources">
+          <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+            {sources.map((s) => <span key={s} className="chip">{s}</span>)}
+          </div>
+          <div style={{ height: 12 }} />
+          <div className="muted" style={{ fontSize: 12 }}>
+            ⚠️ On the web, automatic sync isn't available — browsers can't read Apple / Google / Samsung Health. Use the native app for auto-sync (or a wearable, coming soon). For now, enter your details once.
+          </div>
+        </Panel>
+        <button className="btn primary" onClick={() => setStep(2)}>Set up my profile</button>
+        <button className="btn" style={{ width: "100%" }} onClick={() => setStep(0)}>‹ Back</button>
+        <div style={{ height: 24 }} />
+      </>
+    );
+  }
+
+  // Step 2 — Profile (with unit toggle)
+  const imperial = units === "imperial";
   const bmi = HealthMath.bmi(w, h);
   const tdee = HealthMath.tdee(HealthMath.bmr(w, h, age, sex), act);
+  const profile: BodyProfile = { sex, age, heightCm: h, weightKg: w, activity: act, goal };
   return (
     <>
-      <div className="screen-title" style={{ fontSize: 26 }}>THE SYSTEM HAS CHOSEN YOU</div>
-      <div className="muted" style={{ fontSize: 14 }}>Set up your Hunter. Your data stays on this device (works offline). Add it to your home screen to keep it one tap away.</div>
+      <div className="eyebrow">STEP 3 · PROFILE</div>
+      <div className="screen-title" style={{ fontSize: 24 }}>Your Vessel</div>
       <Panel title="Your Vessel">
+        <label className="field">Units</label>
+        <div className="row" style={{ gap: 8 }}>
+          <button className={`chip ${!imperial ? "sel" : ""}`} onClick={() => setUnits("metric")}>Metric · cm / kg</button>
+          <button className={`chip ${imperial ? "sel" : ""}`} onClick={() => setUnits("imperial")}>Imperial · ft / lb</button>
+        </div>
         <label className="field">Hunter name</label>
         <input value={name} onChange={(e) => setName(e.target.value)} />
         <label className="field">Sex</label>
@@ -329,8 +413,12 @@ function Onboarding({ a }: { a: Arise }) {
           {(["male", "female", "other"] as Sex[]).map((s) => <button key={s} className={`chip ${sex === s ? "sel" : ""}`} onClick={() => setSex(s)}>{s}</button>)}
         </div>
         <Slider label={`Age · ${age}`} v={age} min={14} max={90} onChange={setAge} />
-        <Slider label={`Height · ${h} cm`} v={h} min={120} max={220} onChange={setH} />
-        <Slider label={`Weight · ${w} kg`} v={w} min={35} max={200} onChange={setW} />
+        {imperial
+          ? <Slider label={`Height · ${ftIn(h)}`} v={Math.round(h / CM_PER_IN)} min={48} max={84} onChange={(inch) => setH(inch * CM_PER_IN)} />
+          : <Slider label={`Height · ${Math.round(h)} cm`} v={Math.round(h)} min={120} max={220} onChange={setH} />}
+        {imperial
+          ? <Slider label={`Weight · ${Math.round(w / KG_PER_LB)} lb`} v={Math.round(w / KG_PER_LB)} min={77} max={440} onChange={(lb) => setW(lb * KG_PER_LB)} />
+          : <Slider label={`Weight · ${Math.round(w)} kg`} v={Math.round(w)} min={35} max={200} onChange={setW} />}
         <label className="field">Activity</label>
         <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
           {(Object.keys(ACTIVITY) as ActivityKey[]).map((k) => <button key={k} className={`chip ${act === k ? "sel" : ""}`} onClick={() => setAct(k)}>{ACTIVITY[k].label}</button>)}
@@ -342,10 +430,11 @@ function Onboarding({ a }: { a: Arise }) {
       </Panel>
       <Panel title="System Calibration">
         <div style={{ color: "var(--accent)", fontWeight: 700 }}>BMI {bmi.toFixed(1)} ({HealthMath.bmiCategory(bmi)})</div>
-        <div className="muted" style={{ fontSize: 13 }}>TDEE {Math.round(tdee)} kcal/day</div>
+        <div className="muted" style={{ fontSize: 13 }}>TDEE {Math.round(tdee)} kcal/day · BMI = kg/m² (WHO)</div>
       </Panel>
-      <button className="btn primary" onClick={() => a.completeOnboarding(name, profile)}>AWAKEN</button>
-      <div style={{ height: 20 }} />
+      <button className="btn primary" onClick={() => { a.setUnits(units); a.completeOnboarding(name, profile); }}>AWAKEN</button>
+      <button className="btn" style={{ width: "100%" }} onClick={() => setStep(1)}>‹ Back</button>
+      <div style={{ height: 24 }} />
     </>
   );
 }
@@ -427,10 +516,8 @@ export default function App() {
     return (
       <div className="content">
         <div className="content-inner">
-          {account}
-          <Onboarding a={a} />
+          <Onboarding a={a} auth={auth} />
         </div>
-        {loginModal}
       </div>
     );
   }
