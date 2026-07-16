@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -26,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.health.connect.client.PermissionController
 import com.virgax.arise.AriseViewModel
+import com.virgax.arise.domain.HealthSnapshot
 import com.virgax.arise.health.HealthConnectManager
 import com.virgax.arise.ui.theme.AriseColors
 import kotlinx.coroutines.launch
@@ -97,6 +99,18 @@ fun HealthConnectCard(vm: AriseViewModel) {
                     enabled = !loading,
                     modifier = Modifier.fillMaxWidth(),
                 ) { Text(if (loading) "Reading…" else "Connect Health Connect") }
+            }
+        }
+
+        // Emulators (e.g. BlueStacks) can't use Health Connect — it demands an
+        // encrypted device. This lets you demo the full "connected" experience.
+        if (!vm.healthConnected) {
+            Spacer(Modifier.height(6.dp))
+            TextButton(
+                onClick = { vm.applyHealth(HealthSnapshot.sample) },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("Use demo data (emulator / testing)", color = AriseColors.TextSecondary, fontSize = 12.sp)
             }
         }
     }
