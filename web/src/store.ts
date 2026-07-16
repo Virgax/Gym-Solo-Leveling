@@ -17,6 +17,7 @@ export interface AppState {
   onboardingDone: boolean;
   hunterName: string;
   body: BodyProfile;
+  units: "metric" | "imperial";
   day: string;
   waterMl: number;
   caffeineMg: number;
@@ -33,6 +34,7 @@ const initial: AppState = {
   onboardingDone: false,
   hunterName: "Hunter",
   body: { sex: "male", age: 25, heightCm: 175, weightKg: 75, activity: "moderate", goal: "maintain" },
+  units: "metric",
   day: todayKey(),
   waterMl: 0,
   caffeineMg: 0,
@@ -102,6 +104,7 @@ export function useArise() {
   const completeOnboarding = useCallback((name: string, body: BodyProfile) => {
     setState((s) => ({ ...s, hunterName: name.trim() || "Hunter", body, onboardingDone: true }));
   }, []);
+  const setUnits = useCallback((units: "metric" | "imperial") => setState((s) => ({ ...s, units })), []);
   const addWater = useCallback((ml: number) => setState((s) => ({ ...s, waterMl: Math.max(0, s.waterMl + ml) })), []);
   const addCaffeine = useCallback((mg: number) => setState((s) => ({ ...s, caffeineMg: Math.max(0, s.caffeineMg + mg) })), []);
   const logMeal = useCallback((m: Omit<Meal, "id">) => setState((s) => ({ ...s, meals: [...s.meals, { ...m, id: uid() }] })), []);
@@ -124,7 +127,7 @@ export function useArise() {
   return {
     state, targets, intake, totalXp, level, rank, xpProgress, stats, quests,
     streak: sampleSnapshot.workoutStreakDays,
-    completeOnboarding, addWater, addCaffeine, logMeal, removeMeal, completeGate, resetAll, replaceState,
+    completeOnboarding, setUnits, addWater, addCaffeine, logMeal, removeMeal, completeGate, resetAll, replaceState,
   };
 }
 
